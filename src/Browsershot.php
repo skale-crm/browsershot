@@ -674,7 +674,25 @@ class Browsershot
 
         $this->cleanupTemporaryHtmlFile();
 
-        return base64_decode($encodedPdf);
+        // Try base64 decoding first
+        $decodedPdf = base64_decode($encodedPdf, true);
+
+        if ($decodedPdf !== false) {
+            // Successfully decoded as base64, return the binary string
+            return $decodedPdf;
+        }
+
+        // If base64 decoding failed, assume it's a UInt8Array represented as a comma-separated string
+        if (is_string($encodedPdf)) {
+            $exploded = explode(',', $encodedPdf);
+
+            // Convert the UInt8Array to a binary string
+            $converted = implode(array_map('chr', $exploded));
+
+            return $converted;
+        }
+
+        throw new \Exception("Unexpected PDF output format from Chrome.");
     }
 
     public function savePdf(string $targetPath)
